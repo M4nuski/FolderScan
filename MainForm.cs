@@ -144,7 +144,7 @@ namespace FolderCompare
             {
                 for (var compareIndex = 0; compareIndex < listToCompare.Count; compareIndex++)
                 {
-                    if ((baseList[baseIndex].size == listToCompare[compareIndex].size) && ((listToCompare[compareIndex].fileName == baseList[baseIndex].fileName) || !strictcheckBox.Checked))// Same Size
+                    if ((baseList[baseIndex].size == listToCompare[compareIndex].size) && ((listToCompare[compareIndex].fileName == baseList[baseIndex].fileName) || !strictcheckBox.Checked))
                     {
                         if (File.Exists(StartFolder + listToCompare[compareIndex].filePath))
                         {
@@ -178,7 +178,12 @@ namespace FolderCompare
                             }
                             // Same Data
                             if (compareHashData(baseHashResult, compareHashResult))
+                            {
+
                                 safeDelete(StartFolder + listToCompare[compareIndex].filePath);
+                            }
+                            else statusTextBox.AppendText("\r\nhash Mismatch: " + baseList[baseIndex].filePath + " =/= " + listToCompare[compareIndex].filePath);
+
                         }
                         else
                         {
