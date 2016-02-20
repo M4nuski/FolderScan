@@ -95,6 +95,7 @@ namespace FolderCompare
         private void button3_Click(object sender, EventArgs e)
         {
             numDeleted = 0;
+            progressBar1.Value = 0;
             progressBar1.Maximum = compareFileLists.Count * baseList.Count;
 
             for (var i = 0; i < compareFileLists.Count; i++)
@@ -132,6 +133,8 @@ namespace FolderCompare
                         fastRadio.Checked || strictRadio.Checked,
                         normalRadio.Checked || strictRadio.Checked)) safeDelete(listToCompare[compareIndex].filePath);
                 }
+                progressBar1.Value++;
+                Refresh();
             }
         }
 

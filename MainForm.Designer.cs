@@ -199,7 +199,7 @@
             this.strictRadio.Name = "strictRadio";
             this.strictRadio.Size = new System.Drawing.Size(212, 22);
             this.strictRadio.TabIndex = 15;
-            this.strictRadio.Text = "Strict (Size + Hash + Name)";
+            this.strictRadio.Text = "Strict (Size + Name + Hash)";
             this.strictRadio.UseVisualStyleBackColor = true;
             // 
             // MainForm
