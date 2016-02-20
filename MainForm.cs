@@ -13,10 +13,9 @@ namespace FolderCompare
     {
         public struct FileData
         {
-            public string fileName; // file.ext
-            public string filePath; // subpath/otherpath/file.ext
+            public string fileName;
+            public string filePath;
             public byte[] hash;
-            public bool hashPerformed;
             public long size;
         }
 
@@ -30,11 +29,10 @@ namespace FolderCompare
             InitializeComponent();
         }
 
-        private static string removePath(string FullName, string Path)
-        {
-            return FullName.Substring(Path.Length);
-        }
-
+        // private static string removePath(string FullName, string Path)
+        // {
+        //     return FullName.Substring(Path.Length);
+        // }
 
         private void button1_Click(object sender, EventArgs e)
         {
@@ -46,27 +44,27 @@ namespace FolderCompare
                 compareFoldersTextBox.Clear();
                 progressBar1.Value = 0;
 
-                //baseList = new List<FileData>();
-                baseList = listFiles(basePath, basePath);
+                baseList = listFiles(basePath);
                 compareFileLists = new List<List<FileData>>();
 
                 statusTextBox.Text = baseList.Count + " file(s) found in " + folderDialog1.SelectedPath;
                 button2.Enabled = true;
             }
         }
-        private static List<FileData> listFiles(string StartFolder, string CurrentFolder)
+        private static List<FileData> listFiles(string CurrentFolder)
         {
             var DI = new DirectoryInfo(CurrentFolder);
+
             var list = DI.GetFiles().Select(file => new FileData
             {
                 fileName = file.Name,
-                filePath = removePath(file.FullName, StartFolder),
-                hashPerformed = false,
+                filePath = file.FullName,
                 size = file.Length
             }).ToList();
+
             foreach (var folder in DI.GetDirectories())
             {
-                list.AddRange(listFiles(StartFolder, folder.FullName));
+                list.AddRange(listFiles(folder.FullName));
             }
 
             return list;
@@ -77,7 +75,7 @@ namespace FolderCompare
         {
             if ((folderDialog1.ShowDialog() == DialogResult.OK) & (folderDialog1.SelectedPath != basePath))
             {
-                compareFileLists.Add(listFiles(folderDialog1.SelectedPath, folderDialog1.SelectedPath));
+                compareFileLists.Add(listFiles(folderDialog1.SelectedPath));
 
                 compareFoldersTextBox.AppendText(folderDialog1.SelectedPath + "\r\n");
 
@@ -94,7 +92,107 @@ namespace FolderCompare
             button3.Enabled = false;
         }
 
-        static private bool compareHashData(byte[] a, byte[] b)
+        private void button3_Click(object sender, EventArgs e)
+        {
+            numDeleted = 0;
+            progressBar1.Maximum = compareFileLists.Count * baseList.Count;
+
+            for (var i = 0; i < compareFileLists.Count; i++)
+            {
+                compareAndDelete(compareFileLists[i]);
+            }
+
+            statusTextBox.AppendText("\r\n" + numDeleted + " file(s) deleted");
+            button3.Enabled = false;
+        }
+
+        private void safeDelete(string fileName)
+        {
+            if (File.Exists(fileName))
+            try
+            {
+                numDeleted++;
+                File.Delete(fileName);
+                logListBox.Items.Add(fileName + " deleted");
+            }
+            catch (Exception ex)
+            {
+                numDeleted--;
+                statusTextBox.AppendText("\r\n" + ex.Message);
+            }
+        }
+
+        private void compareAndDelete(List<FileData> listToCompare)
+        {
+            foreach (var baseFile in baseList)
+            {
+                for (var compareIndex = 0; compareIndex < listToCompare.Count; compareIndex++)
+                {
+                    if (compareFileData(baseFile, listToCompare[compareIndex],
+                        fastRadio.Checked || strictRadio.Checked,
+                        normalRadio.Checked || strictRadio.Checked)) safeDelete(listToCompare[compareIndex].filePath);
+                }
+            }
+        }
+
+        private static bool compareFileData(FileData file1, FileData file2, bool CompareName, bool CompareHash)
+        {
+            return (compareSize(file1, file2) &&
+                    (!CompareName || compareName(file1, file2)) &&
+                    (!CompareHash || compareHash(file1, file2)));
+        }
+
+        private static bool compareSize(FileData file1, FileData file2)
+        {
+            return (file1.size == file2.size);
+        }
+
+        private static bool compareName(FileData file1, FileData file2)
+        {
+            return (file1.fileName.Equals(file2.fileName, StringComparison.InvariantCultureIgnoreCase));
+        }
+
+        private static bool compareHash(FileData file1, FileData file2)
+        {
+            var result = (File.Exists(file1.filePath) && File.Exists(file2.filePath));
+            if (result)
+            {
+                if (file1.hash == null)
+                {
+                    file1 = new FileData
+                    {
+                        fileName = file1.fileName,
+                        filePath = file1.filePath,
+                        size = file1.size,
+                        hash = createHash(file1.filePath)
+                    };
+                }
+                if (file2.hash == null)
+                {
+                    file2 = new FileData
+                    {
+                        fileName = file2.fileName,
+                        filePath = file2.filePath,
+                        size = file2.size,
+                        hash = createHash(file2.filePath)
+                    };
+                }
+                result = compareHashValues(file1.hash, file2.hash);
+            }
+            return result;
+        }
+
+        private static byte[] createHash(string path)
+        {
+            var HashMaker = MD5.Create();
+            var FileStream = File.OpenRead(path);
+            var HashResult = HashMaker.ComputeHash(FileStream);
+            HashMaker.Dispose();
+            FileStream.Dispose();
+            return HashResult;
+        }
+
+        static private bool compareHashValues(byte[] a, byte[] b)
         {
             var result = (a.Length == b.Length);
             if (result)
@@ -107,95 +205,7 @@ namespace FolderCompare
             return result;
         }
 
-        private void button3_Click(object sender, EventArgs e)
-        {
-            numDeleted = 0;
-            progressBar1.Maximum = compareFileLists.Count;
-
-            for (var i = 0; i < compareFileLists.Count; i++)
-            {
-                compareAndDelete(compareFileLists[i], compareFoldersTextBox.Lines[i]);
-                progressBar1.Value = i + 1;
-                Refresh();
-            }
-
-            statusTextBox.AppendText("\r\n" + numDeleted + " file(s) deleted");
-            button3.Enabled = false;
-        }
-
-        private void safeDelete(string fileName)
-        {
-            try
-            {
-                numDeleted++;
-                File.Delete(fileName);
-                logListBox.Items.Add(fileName + " deleted");
-            }
-            catch (IOException ex)
-            {
-                numDeleted--;
-                statusTextBox.AppendText("\r\n" + ex.Message);
-            }
-        }
-
-        private void compareAndDelete(List<FileData> listToCompare, string StartFolder)
-        {
-            for (var baseIndex = 0; baseIndex < baseList.Count; baseIndex++)
-            {
-                for (var compareIndex = 0; compareIndex < listToCompare.Count; compareIndex++)
-                {
-                    if ((baseList[baseIndex].size == listToCompare[compareIndex].size) && ((listToCompare[compareIndex].fileName == baseList[baseIndex].fileName) || !strictcheckBox.Checked))
-                    {
-                        if (File.Exists(StartFolder + listToCompare[compareIndex].filePath))
-                        {
-                            var compareHashMaker = MD5.Create();
-                            var compareFileStream =
-                                File.OpenRead(StartFolder + listToCompare[compareIndex].filePath);
-                            var compareHashResult = compareHashMaker.ComputeHash(compareFileStream);
-                            compareHashMaker.Dispose();
-                            compareFileStream.Dispose();
-
-                            byte[] baseHashResult;
-
-                            if (baseList[baseIndex].hashPerformed) baseHashResult = baseList[baseIndex].hash;
-
-                            else
-                            {
-                                var baseHashMaker = MD5.Create();
-                                var baseFileStream = File.OpenRead(basePath + baseList[baseIndex].filePath);
-                                baseHashResult = baseHashMaker.ComputeHash(baseFileStream);
-                                baseHashMaker.Dispose();
-                                baseFileStream.Dispose();
-
-                                baseList[baseIndex] = new FileData
-                                {
-                                    fileName = baseList[baseIndex].fileName,
-                                    filePath = baseList[baseIndex].filePath,
-                                    hash = baseHashResult,
-                                    hashPerformed = true,
-                                    size = baseList[baseIndex].size
-                                };
-                            }
-                            // Same Data
-                            if (compareHashData(baseHashResult, compareHashResult))
-                            {
-
-                                safeDelete(StartFolder + listToCompare[compareIndex].filePath);
-                            }
-                            else statusTextBox.AppendText("\r\nhash Mismatch: " + baseList[baseIndex].filePath + " =/= " + listToCompare[compareIndex].filePath);
-
-                        }
-                        else
-                        {
-                            statusTextBox.AppendText("\r\nFile not found (deleted?): " +
-                                                     listToCompare[compareIndex].filePath);
-                        }
-
-                    }
-                }
-            }
-        }
-
+        #region empty files/folders
         private void button6_Click(object sender, EventArgs e)
         {
             //delete empty files
@@ -278,8 +288,9 @@ namespace FolderCompare
                 }
             }
         }
+        #endregion
 
-
+        #region JPEG
         private void button5_Click(object sender, EventArgs e)
         {
             //find corrupted JPG
@@ -331,9 +342,7 @@ namespace FolderCompare
                 return false;
             }
         }
-
-
-
+        #endregion
 
     }
 }

@@ -40,7 +40,9 @@
             this.compareFoldersTextBox = new System.Windows.Forms.TextBox();
             this.statusTextBox = new System.Windows.Forms.TextBox();
             this.progressBar1 = new System.Windows.Forms.ProgressBar();
-            this.strictcheckBox = new System.Windows.Forms.CheckBox();
+            this.fastRadio = new System.Windows.Forms.RadioButton();
+            this.normalRadio = new System.Windows.Forms.RadioButton();
+            this.strictRadio = new System.Windows.Forms.RadioButton();
             this.SuspendLayout();
             // 
             // button1
@@ -168,22 +170,46 @@
             this.progressBar1.Size = new System.Drawing.Size(220, 39);
             this.progressBar1.TabIndex = 11;
             // 
-            // strictcheckBox
+            // fastRadio
             // 
-            this.strictcheckBox.AutoSize = true;
-            this.strictcheckBox.Location = new System.Drawing.Point(932, 691);
-            this.strictcheckBox.Name = "strictcheckBox";
-            this.strictcheckBox.Size = new System.Drawing.Size(228, 22);
-            this.strictcheckBox.TabIndex = 12;
-            this.strictcheckBox.Text = "Strict (same name, size, hash)";
-            this.strictcheckBox.UseVisualStyleBackColor = true;
+            this.fastRadio.AutoSize = true;
+            this.fastRadio.Location = new System.Drawing.Point(607, 688);
+            this.fastRadio.Name = "fastRadio";
+            this.fastRadio.Size = new System.Drawing.Size(155, 22);
+            this.fastRadio.TabIndex = 13;
+            this.fastRadio.Text = "Fast (Size + Name)";
+            this.fastRadio.UseVisualStyleBackColor = true;
+            // 
+            // normalRadio
+            // 
+            this.normalRadio.AutoSize = true;
+            this.normalRadio.Checked = true;
+            this.normalRadio.Location = new System.Drawing.Point(768, 688);
+            this.normalRadio.Name = "normalRadio";
+            this.normalRadio.Size = new System.Drawing.Size(170, 22);
+            this.normalRadio.TabIndex = 14;
+            this.normalRadio.TabStop = true;
+            this.normalRadio.Text = "Normal (Size + Hash)";
+            this.normalRadio.UseVisualStyleBackColor = true;
+            // 
+            // strictRadio
+            // 
+            this.strictRadio.AutoSize = true;
+            this.strictRadio.Location = new System.Drawing.Point(944, 688);
+            this.strictRadio.Name = "strictRadio";
+            this.strictRadio.Size = new System.Drawing.Size(212, 22);
+            this.strictRadio.TabIndex = 15;
+            this.strictRadio.Text = "Strict (Size + Hash + Name)";
+            this.strictRadio.UseVisualStyleBackColor = true;
             // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1170, 824);
-            this.Controls.Add(this.strictcheckBox);
+            this.Controls.Add(this.strictRadio);
+            this.Controls.Add(this.normalRadio);
+            this.Controls.Add(this.fastRadio);
             this.Controls.Add(this.progressBar1);
             this.Controls.Add(this.statusTextBox);
             this.Controls.Add(this.compareFoldersTextBox);
@@ -220,7 +246,9 @@
         private System.Windows.Forms.TextBox compareFoldersTextBox;
         private System.Windows.Forms.TextBox statusTextBox;
         private System.Windows.Forms.ProgressBar progressBar1;
-        private System.Windows.Forms.CheckBox strictcheckBox;
+        private System.Windows.Forms.RadioButton fastRadio;
+        private System.Windows.Forms.RadioButton normalRadio;
+        private System.Windows.Forms.RadioButton strictRadio;
     }
 }
 
