@@ -43,6 +43,7 @@
             this.fastRadio = new System.Windows.Forms.RadioButton();
             this.normalRadio = new System.Windows.Forms.RadioButton();
             this.strictRadio = new System.Windows.Forms.RadioButton();
+            this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
             this.SuspendLayout();
             // 
             // button1
@@ -202,6 +203,13 @@
             this.strictRadio.Text = "Strict (Size + Name + Hash)";
             this.strictRadio.UseVisualStyleBackColor = true;
             // 
+            // backgroundWorker1
+            // 
+            this.backgroundWorker1.WorkerReportsProgress = true;
+            this.backgroundWorker1.DoWork += new System.ComponentModel.DoWorkEventHandler(this.backgroundWorker1_DoWork);
+            this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
+            this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker1_RunWorkerCompleted);
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
@@ -249,6 +257,7 @@
         private System.Windows.Forms.RadioButton fastRadio;
         private System.Windows.Forms.RadioButton normalRadio;
         private System.Windows.Forms.RadioButton strictRadio;
+        private System.ComponentModel.BackgroundWorker backgroundWorker1;
     }
 }
 

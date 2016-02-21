@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Drawing;
+using System.Drawing.Design;
 using System.Drawing.Imaging;
 using System.IO;
 using System.Linq;
@@ -19,32 +20,59 @@ namespace FolderCompare
             public long size;
         }
 
+        private struct workData
+        {
+            public List<List<FileData>> CompareLists;
+            public List<FileData> BaseList;
+            public bool cName, cHash;
+        }
+
         private List<List<FileData>> compareFileLists;
         private List<FileData> baseList;
-        private string basePath;
-        private int numDeleted;
+
+        private int numDeleted, numCompared;
 
         public MainForm()
         {
             InitializeComponent();
         }
 
-        // private static string removePath(string FullName, string Path)
-        // {
-        //     return FullName.Substring(Path.Length);
-        // }
+        delegate void AddLineDelegate(string text);
+
+        private void addLOG(string s)
+        {
+            if (logListBox.InvokeRequired)
+            {
+                logListBox.Invoke((AddLineDelegate)addLOG, new object[] { s });
+            }
+            else
+            {
+                logListBox.Items.Add(s);
+            }
+        }
+
+        private void addSTATUS(string s)
+        {
+            if (statusTextBox.InvokeRequired)
+            {
+                statusTextBox.Invoke((AddLineDelegate)addSTATUS, new object[] { s });
+            }
+            else
+            {
+                statusTextBox.AppendText(s);
+            }
+        }
 
         private void button1_Click(object sender, EventArgs e)
         {
             if (folderDialog1.ShowDialog() == DialogResult.OK)
             {
-                basePath = folderDialog1.SelectedPath;
-                baseFoldertextBox.Text = basePath;
+                baseFoldertextBox.Text = folderDialog1.SelectedPath;
                 logListBox.Items.Clear();
                 compareFoldersTextBox.Clear();
                 progressBar1.Value = 0;
 
-                baseList = listFiles(basePath);
+                baseList = listFiles(folderDialog1.SelectedPath);
                 compareFileLists = new List<List<FileData>>();
 
                 statusTextBox.Text = baseList.Count + " file(s) found in " + folderDialog1.SelectedPath;
@@ -73,7 +101,7 @@ namespace FolderCompare
 
         private void button2_Click(object sender, EventArgs e)
         {
-            if ((folderDialog1.ShowDialog() == DialogResult.OK) & (folderDialog1.SelectedPath != basePath))
+            if ((folderDialog1.ShowDialog() == DialogResult.OK) & (folderDialog1.SelectedPath != baseFoldertextBox.Text))
             {
                 compareFileLists.Add(listFiles(folderDialog1.SelectedPath));
 
@@ -96,15 +124,18 @@ namespace FolderCompare
         {
             numDeleted = 0;
             progressBar1.Value = 0;
+            numCompared = 0;
             progressBar1.Maximum = compareFileLists.Count * baseList.Count;
-
-            for (var i = 0; i < compareFileLists.Count; i++)
-            {
-                compareAndDelete(compareFileLists[i]);
-            }
-
-            statusTextBox.AppendText("\r\n" + numDeleted + " file(s) deleted");
+            UseWaitCursor = true;
             button3.Enabled = false;
+            var wdata = new workData
+            {
+                BaseList = baseList,
+                CompareLists = compareFileLists,
+                cName = fastRadio.Checked || strictRadio.Checked,
+                cHash = normalRadio.Checked || strictRadio.Checked
+            };
+            backgroundWorker1.RunWorkerAsync(wdata);
         }
 
         private void safeDelete(string fileName)
@@ -114,27 +145,28 @@ namespace FolderCompare
             {
                 numDeleted++;
                 File.Delete(fileName);
-                logListBox.Items.Add(fileName + " deleted");
+                addLOG(fileName + " deleted");
             }
             catch (Exception ex)
             {
                 numDeleted--;
-                statusTextBox.AppendText("\r\n" + ex.Message);
+                addSTATUS("\r\n" + ex.Message);
             }
         }
 
-        private void compareAndDelete(List<FileData> listToCompare)
+        private void compareAndDelete(List<FileData> BaseList, List<FileData> listToCompare, bool cname, bool chash)
         {
-            foreach (var baseFile in baseList)
+            foreach (var baseFile in BaseList)
             {
                 for (var compareIndex = 0; compareIndex < listToCompare.Count; compareIndex++)
                 {
                     if (compareFileData(baseFile, listToCompare[compareIndex],
-                        fastRadio.Checked || strictRadio.Checked,
-                        normalRadio.Checked || strictRadio.Checked)) safeDelete(listToCompare[compareIndex].filePath);
+                        cname,
+                        chash)) safeDelete(listToCompare[compareIndex].filePath);
                 }
-                progressBar1.Value++;
-                Refresh();
+                numCompared++;
+                backgroundWorker1.ReportProgress(numCompared);
+
             }
         }
 
@@ -346,6 +378,30 @@ namespace FolderCompare
             }
         }
         #endregion
+
+        private void backgroundWorker1_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
+        {
+            if (e.Argument != null)
+            {
+                var wData = (workData) e.Argument;
+                for (var i = 0; i < wData.CompareLists.Count; i++)
+                    {
+                        compareAndDelete(wData.BaseList, wData.CompareLists[i], wData.cName, wData.cHash);
+                    }
+            }
+
+        }
+
+        private void backgroundWorker1_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
+        {
+            UseWaitCursor = false;
+            statusTextBox.AppendText("\r\n" + numDeleted + " file(s) deleted");
+        }
+
+        private void backgroundWorker1_ProgressChanged(object sender, System.ComponentModel.ProgressChangedEventArgs e)
+        {
+            progressBar1.Value = e.ProgressPercentage;
+        }
 
     }
 }
