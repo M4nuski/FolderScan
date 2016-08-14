@@ -12,19 +12,20 @@ namespace FolderCompare
 {
     public partial class MainForm : Form
     {
-        public struct FileData
+        public class FileData
         {
             public string fileName;
             public string filePath;
             public byte[] hash;
             public long size;
+            public bool found;
         }
 
         private struct workData
         {
             public List<List<FileData>> CompareLists;
             public List<FileData> BaseList;
-            public bool cName, cHash;
+            public bool cName, cHash, delete, listUnequal;
         }
 
         private List<List<FileData>> compareFileLists;
@@ -37,13 +38,13 @@ namespace FolderCompare
             InitializeComponent();
         }
 
-        delegate void AddLineDelegate(string text);
+        delegate void voidStringDelegate(string text);
 
         private void addLOG(string s)
         {
             if (logListBox.InvokeRequired)
             {
-                logListBox.Invoke((AddLineDelegate)addLOG, new object[] { s });
+                logListBox.Invoke((voidStringDelegate)addLOG, new object[] { s });
             }
             else
             {
@@ -55,7 +56,7 @@ namespace FolderCompare
         {
             if (statusTextBox.InvokeRequired)
             {
-                statusTextBox.Invoke((AddLineDelegate)addSTATUS, new object[] { s });
+                statusTextBox.Invoke((voidStringDelegate)addSTATUS, new object[] { s });
             }
             else
             {
@@ -119,8 +120,7 @@ namespace FolderCompare
             compareFileLists = new List<List<FileData>>();
             button3.Enabled = false;
         }
-
-        private void button3_Click(object sender, EventArgs e)
+        private void button3_Click(object sender, EventArgs e) // compare and delete
         {
             numDeleted = 0;
             progressBar1.Value = 0;
@@ -133,7 +133,29 @@ namespace FolderCompare
                 BaseList = baseList,
                 CompareLists = compareFileLists,
                 cName = fastRadio.Checked || strictRadio.Checked,
-                cHash = normalRadio.Checked || strictRadio.Checked
+                cHash = normalRadio.Checked || strictRadio.Checked,
+                delete = true,
+                listUnequal = false
+            };
+            backgroundWorker1.RunWorkerAsync(wdata);
+        }
+
+        private void button7_Click(object sender, EventArgs e) //compare only
+        {
+            numDeleted = 0;
+            progressBar1.Value = 0;
+            numCompared = 0;
+            progressBar1.Maximum = compareFileLists.Count * baseList.Count;
+            UseWaitCursor = true;
+            button3.Enabled = false;
+            var wdata = new workData
+            {
+                BaseList = baseList,
+                CompareLists = compareFileLists,
+                cName = fastRadio.Checked || strictRadio.Checked,
+                cHash = normalRadio.Checked || strictRadio.Checked,
+                delete = false,
+                listUnequal = checkBox1.Checked
             };
             backgroundWorker1.RunWorkerAsync(wdata);
         }
@@ -166,10 +188,31 @@ namespace FolderCompare
                 }
                 numCompared++;
                 backgroundWorker1.ReportProgress(numCompared);
+            }
+        }
+        private void compareOnly(List<FileData> BaseList, List<FileData> listToCompare, bool cname, bool chash, bool cunEqual)
+        {
+            for (var baseFileIndex = 0; baseFileIndex < BaseList.Count; baseFileIndex++)
+            {
+                for (var compareIndex = 0; compareIndex < listToCompare.Count; compareIndex++)
+                {
+                    if (compareFileData(BaseList[baseFileIndex], listToCompare[compareIndex], cname, chash))
+                    {
+                        BaseList[baseFileIndex].found = true;
+                        listToCompare[compareIndex].found = true;
 
+                        if (!cunEqual)
+                        {
+                            addLOG("Match: " + listToCompare[compareIndex].filePath);
+                        }
+                    }
+                }
+                numCompared++;
+                backgroundWorker1.ReportProgress(numCompared);
             }
         }
 
+        #region comparers
         private static bool compareFileData(FileData file1, FileData file2, bool CompareName, bool CompareHash)
         {
             return (compareSize(file1, file2) &&
@@ -192,26 +235,9 @@ namespace FolderCompare
             var result = (File.Exists(file1.filePath) && File.Exists(file2.filePath));
             if (result)
             {
-                if (file1.hash == null)
-                {
-                    file1 = new FileData
-                    {
-                        fileName = file1.fileName,
-                        filePath = file1.filePath,
-                        size = file1.size,
-                        hash = createHash(file1.filePath)
-                    };
-                }
-                if (file2.hash == null)
-                {
-                    file2 = new FileData
-                    {
-                        fileName = file2.fileName,
-                        filePath = file2.filePath,
-                        size = file2.size,
-                        hash = createHash(file2.filePath)
-                    };
-                }
+                if (file1.hash == null) file1.hash = createHash(file1.filePath);
+                if (file2.hash == null) file2.hash = createHash(file2.filePath);
+
                 result = compareHashValues(file1.hash, file2.hash);
             }
             return result;
@@ -239,6 +265,7 @@ namespace FolderCompare
             }
             return result;
         }
+        #endregion
 
         #region empty files/folders
         private void button6_Click(object sender, EventArgs e)
@@ -378,30 +405,60 @@ namespace FolderCompare
             }
         }
         #endregion
-
+        
+        #region AsyncWorker
         private void backgroundWorker1_DoWork(object sender, System.ComponentModel.DoWorkEventArgs e)
         {
             if (e.Argument != null)
             {
                 var wData = (workData) e.Argument;
-                for (var i = 0; i < wData.CompareLists.Count; i++)
+                if (wData.delete)
+                {
+                    //compare and delete duplicates
+                    for (var i = 0; i < wData.CompareLists.Count; i++)
                     {
                         compareAndDelete(wData.BaseList, wData.CompareLists[i], wData.cName, wData.cHash);
                     }
+                }
+                else
+                {
+                    //compare data
+                    for (var i = 0; i < wData.CompareLists.Count; i++)
+                    {
+                        compareOnly(wData.BaseList, wData.CompareLists[i], wData.cName, wData.cHash, wData.listUnequal);
+                    }
+
+                    //show differnces
+                    if (wData.listUnequal)
+                    {
+                        foreach (var fd in wData.BaseList)
+                        {
+                            if (!fd.found) addLOG("Differs: " + fd.filePath);
+                        }
+
+                        for (var i = 0; i < wData.CompareLists.Count; i++)
+                        {
+                            foreach (var fd in wData.CompareLists[i])
+                            {
+                                if (!fd.found) addLOG("Differs: " + fd.filePath);
+                            }
+                        }
+
+                    }
+                }
             }
-
         }
-
         private void backgroundWorker1_RunWorkerCompleted(object sender, System.ComponentModel.RunWorkerCompletedEventArgs e)
         {
             UseWaitCursor = false;
             statusTextBox.AppendText("\r\n" + numDeleted + " file(s) deleted");
         }
-
         private void backgroundWorker1_ProgressChanged(object sender, System.ComponentModel.ProgressChangedEventArgs e)
         {
             progressBar1.Value = e.ProgressPercentage;
         }
+        #endregion
+
 
     }
 }

@@ -44,6 +44,8 @@
             this.normalRadio = new System.Windows.Forms.RadioButton();
             this.strictRadio = new System.Windows.Forms.RadioButton();
             this.backgroundWorker1 = new System.ComponentModel.BackgroundWorker();
+            this.button7 = new System.Windows.Forms.Button();
+            this.checkBox1 = new System.Windows.Forms.CheckBox();
             this.SuspendLayout();
             // 
             // button1
@@ -166,9 +168,9 @@
             // progressBar1
             // 
             this.progressBar1.Anchor = ((System.Windows.Forms.AnchorStyles)((System.Windows.Forms.AnchorStyles.Bottom | System.Windows.Forms.AnchorStyles.Right)));
-            this.progressBar1.Location = new System.Drawing.Point(935, 770);
+            this.progressBar1.Location = new System.Drawing.Point(16, 691);
             this.progressBar1.Name = "progressBar1";
-            this.progressBar1.Size = new System.Drawing.Size(220, 39);
+            this.progressBar1.Size = new System.Drawing.Size(585, 15);
             this.progressBar1.TabIndex = 11;
             // 
             // fastRadio
@@ -210,11 +212,33 @@
             this.backgroundWorker1.ProgressChanged += new System.ComponentModel.ProgressChangedEventHandler(this.backgroundWorker1_ProgressChanged);
             this.backgroundWorker1.RunWorkerCompleted += new System.ComponentModel.RunWorkerCompletedEventHandler(this.backgroundWorker1_RunWorkerCompleted);
             // 
+            // button7
+            // 
+            this.button7.Location = new System.Drawing.Point(935, 770);
+            this.button7.Name = "button7";
+            this.button7.Size = new System.Drawing.Size(155, 39);
+            this.button7.TabIndex = 16;
+            this.button7.Text = "Compare Only";
+            this.button7.UseVisualStyleBackColor = true;
+            this.button7.Click += new System.EventHandler(this.button7_Click);
+            // 
+            // checkBox1
+            // 
+            this.checkBox1.AutoSize = true;
+            this.checkBox1.Location = new System.Drawing.Point(1096, 779);
+            this.checkBox1.Name = "checkBox1";
+            this.checkBox1.Size = new System.Drawing.Size(66, 22);
+            this.checkBox1.TabIndex = 17;
+            this.checkBox1.Text = "List !=";
+            this.checkBox1.UseVisualStyleBackColor = true;
+            // 
             // MainForm
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 17F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(1170, 824);
+            this.Controls.Add(this.checkBox1);
+            this.Controls.Add(this.button7);
             this.Controls.Add(this.strictRadio);
             this.Controls.Add(this.normalRadio);
             this.Controls.Add(this.fastRadio);
@@ -258,6 +282,8 @@
         private System.Windows.Forms.RadioButton normalRadio;
         private System.Windows.Forms.RadioButton strictRadio;
         private System.ComponentModel.BackgroundWorker backgroundWorker1;
+        private System.Windows.Forms.Button button7;
+        private System.Windows.Forms.CheckBox checkBox1;
     }
 }
 
