@@ -19,6 +19,7 @@ namespace FolderCompare
             public byte[] hash;
             public long size;
             public bool found;
+
         }
 
         private struct workData
@@ -433,14 +434,14 @@ namespace FolderCompare
                     {
                         foreach (var fd in wData.BaseList)
                         {
-                            if (!fd.found) addLOG("Differs: " + fd.filePath);
+                            if (!fd.found) addLOG("No Match in other folder(s): " + fd.filePath);
                         }
 
                         for (var i = 0; i < wData.CompareLists.Count; i++)
                         {
                             foreach (var fd in wData.CompareLists[i])
                             {
-                                if (!fd.found) addLOG("Differs: " + fd.filePath);
+                                if (!fd.found) addLOG("Dosen't Match base folder: " + fd.filePath);
                             }
                         }
 
